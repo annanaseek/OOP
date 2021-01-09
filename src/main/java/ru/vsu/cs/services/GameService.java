@@ -1,112 +1,145 @@
 package ru.vsu.cs.services;
-import ru.vsu.cs.essences.Cell;
-import ru.vsu.cs.essences.Game;
-import ru.vsu.cs.essences.Player;
 
-import java.util.Scanner;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import ru.vsu.cs.essences.*;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
 public class GameService {
     private BoardService boardService = new BoardService();
     private CheckerService checkerService = new CheckerService();
+    private Random random = new Random();
 
-    private void playGame(Game game) {
-        Player player = new Player();
-        player.first = true;
+    private Scanner scanner = new Scanner(System.in);
+
+    public void startGame(GameState gameState) {
+        /*System.out.println("Начать новую игру - введите 1; восстановить старую игру - введите 2.");
+        int command = Integer.parseInt(scanner.nextLine());
+        if (command == 2) {
+            if(!loadGame(gameState)) {
+                System.out.println("Ошибка загрузки игры");
+                return;
+            }
+        } else {
+            boardService.fillBoard(gameState.getBoard());
+            gameState.addPlayer(new Player(true, "White"));
+            gameState.addPlayer(new Player(false, "Black"));
+            gameState.setActivePlayer();
+        }*/
+
+        boardService.fillBoard(gameState.getBoard());
+        gameState.addPlayer(new Player(true, "White"));
+        gameState.addPlayer(new Player(false, "Black"));
+        gameState.setActivePlayer();
+
+        playGame(gameState);
+    }
+
+    private void playGame(GameState gameState) {
 
         while (true) {
-            drawField(game);
-            System.out.println("сейчас ходит игрок " + player.toString());
-            System.out.println("введите координаты клеток, откуда и куда ходить в виде: a1, b2");
-            Scanner scn = new Scanner(System.in);
-            int[] coordinates = getCoordinates(scn.nextLine());
-            Cell c1 = game.getBoard().getField()[coordinates[0]][coordinates[1]];
-            Cell c2 = game.getBoard().getField()[coordinates[2]][coordinates[3]];
-            doStep(c1, c2, game, player);
+            drawField(gameState);
+            int command = getCommand();
+            switch (command) {
+                case 1:
+                    if (!doGameStep(gameState.nextPlayer(), gameState.getBoard())) {
+                        printLoser(gameState.getActivePlayer());
+                        return;
+                    }
+                    break;
+                case 2:
+                    saveGame(gameState);
+                    return;
+                case 3:
+                    return;
+            }
         }
-
     }
 
-    private void drawField(Game game) {
-        Cell[][] cells = game.getBoard().getField();
-
-        System.out.print("   ");
-        for (char i = 'a'; i <= 'h'; i++) {
-            System.out.print(i + " ");
+    private boolean doGameStep(Player player, Board board) {
+        List<Checker> playersCheckers = board.getCheckersByColor(player.isFirst());
+        for (Checker checker : playersCheckers) {
+            Map<Cell, Checker> attack = checkerService.getAttackableCells(board, checker);
+            if (!attack.isEmpty()) {
+                int index = random.nextInt(attack.size());
+                Cell cell = (Cell) attack.keySet().toArray()[index];
+                checkerService.doAttack(board, checker, cell, attack.get(cell));
+                return true;
+            }
         }
-        System.out.println();
+        for (Checker checker : playersCheckers) {
+            List<Cell> steps = checkerService.getAvailableCells(board, checker);
+            if (!steps.isEmpty()) {
+                int index = random.nextInt(steps.size());
+                checkerService.doStep(board, checker, steps.get(index));
+                return true;
+            }
+        }
+        return false;
+    }
 
-        for (int i = cells.length - 1; i >= 0; i--) {
-            System.out.print(i + 1 + " |");
-            for (int j = 0; j < cells[0].length; j++) {
-                if (game.getBoard().getCellToChecker().get(cells[i][j]) == null) {
-                    System.out.print(0 + " ");
+    private void drawField(GameState gameState) {
+        StringBuilder sb = new StringBuilder();
+        Board board = gameState.getBoard();
+
+        sb.append(System.lineSeparator());
+        sb.append("    ");
+        for (char i = 'a'; i <= 'h'; i++) {
+            sb.append(i + " ");
+        }
+        sb.append(System.lineSeparator());
+
+        for (int i = board.FIELD_SIZE - 1; i >= 0; i--) {
+            sb.append(i + 1).append(" |");
+            for (int j = 0; j < board.FIELD_SIZE; j++) {
+                Cell cell = board.getCell(new Coordinates(j, i));
+                if (cell == null || board.getChecker(cell) == null) {
+                    sb.append("⬜");
                 } else {
-                    System.out.print(game.getBoard().getCellToChecker().get(cells[i][j]).toString() + " ");
+                    Checker checker = board.getChecker(cell);
+                    sb.append(checker.forPrint());
                 }
             }
-            System.out.print("| " + (i + 1));
-            System.out.println();
+            sb.append(System.lineSeparator());
         }
-        System.out.print("   ");
-        for (char i = 'a'; i <= 'h'; i++) {
-            System.out.print(i + " ");
-        }
-        System.out.println();
+        System.out.println(sb.toString());
     }
 
-    private int[] getCoordinates(String s) {
-        int[] coordinates = new int[4];
-        char[] c = s.toCharArray();
-        coordinates[1] = getOneCoordinate(c[0]);
-        coordinates[0] = getOneCoordinate(c[1]);
-        coordinates[3] = getOneCoordinate(c[4]);
-        coordinates[2] = getOneCoordinate(c[5]);
-        return coordinates;
-    }
-
-    private int getOneCoordinate(char c) {
-        switch (c) {
-            case 'a':
-            case '1':
-                return 0;
-            case 'b':
-            case '2':
-                return 1;
-            case 'c':
-            case '3':
-                return 2;
-            case 'd':
-            case '4':
-                return 3;
-            case 'e':
-            case '5':
-                return 4;
-            case 'f':
-            case '6':
-                return 5;
-            case 'g':
-            case '7':
-                return 6;
-            case 'h':
-            case '8':
-                return 7;
-        }
-        return -1;
-    }
-
-    private void doStep(Cell c1, Cell c2, Game game, Player player) {
-        if (checkerService.canDoStep(c1, c2, player, game.getBoard())) {
-            checkerService.doStep(c1, c2, game.getBoard());
-            changePlayer(player);
+    private void saveGame(GameState gameState) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            mapper.writerWithDefaultPrettyPrinter().writeValue(new File("gameState.json"), gameState);
+            System.out.println("Игра сохранена.");
+        } catch (IOException e) {
+            System.out.println("Ошибка при сохранении игры");
         }
     }
 
-    private void changePlayer(Player player) {
-        player.first = !player.isFirst();
+    private boolean loadGame(GameState gameState) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            GameState loadGameState = mapper.readValue(new File("gameState.json"), GameState.class);
+
+        } catch (IOException e) {
+            return false;
+        }
+        return true;
     }
 
-    public void startGame (Game game) {
-        boardService.fillBoard(game.getBoard());
-        playGame(game);
+    private int getCommand() {
+        System.out.println("Выберете номер команды: 1 - следующий шаг; 2 - соханить игру; 3 - выйти из игры");
+        int command = Integer.parseInt(scanner.nextLine());
+        if (command < 1 || command > 3) {
+            return getCommand();
+        }
+        return command;
     }
+
+    private void printLoser(Player player) {
+        System.out.println("Проиграл " + player.getName());
+    }
+
+
 }

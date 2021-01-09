@@ -1,38 +1,38 @@
 package ru.vsu.cs.essences;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+@JsonSerialize
+@JsonDeserialize
 public class Checker {
 
     private boolean isWhite;
-    Player player;
-
-    public Checker(boolean isWhite, Player player) {
-        this.isWhite = isWhite;
-        this.player = player;
-    }
-
-
+    private boolean isQueen;
 
     public Checker(boolean isWhite) {
         this.isWhite = isWhite;
+        this.isQueen = false;
     }
-
-    public void setPlayer(Player player) {
-        this.player = player;
-    }
-
 
     public boolean isWhite() {
         return isWhite;
     }
 
-    public String toString() {
-        String stringChecker = null;
-        if (isWhite) {
-            stringChecker = "1";
-        }
-        if (!isWhite) {
-            stringChecker = "2";
-        }
-        return stringChecker;
+    public boolean isQueen() {
+        return isQueen;
     }
+
+    public void setQueen(boolean queen) {
+        isQueen = queen;
+    }
+
+    public String forPrint() {
+        if (isWhite) {
+            if (isQueen) return "⛁";
+            return "⛀";
+        } else if (isQueen) return "⛃";
+        else return "⛂";
+    }
+
 }

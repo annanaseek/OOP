@@ -1,10 +1,14 @@
 package ru.vsu.cs.essences;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import java.util.Objects;
 
+@JsonSerialize
 public class Coordinates {
-    final int x;
-    final int y;
+    private final int x;
+    private final int y;
 
     public Coordinates(int x, int y) {
         this.x = x;
@@ -30,5 +34,13 @@ public class Coordinates {
     @Override
     public int hashCode() {
         return Objects.hash(x, y);
+    }
+
+    @Override
+    public String toString() {
+        return "Coordinates{" +
+                "x=" + x +
+                ", y=" + y +
+                '}';
     }
 }

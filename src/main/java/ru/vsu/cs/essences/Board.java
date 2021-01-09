@@ -1,23 +1,28 @@
 package ru.vsu.cs.essences;
 
-import java.awt.*;
-import java.util.HashMap;
-import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@JsonSerialize
 public class Board {
 
-    final int fieldSize = 8;
-    Map<Coordinates, Cell> field;
+    public final int FIELD_SIZE = 8;
     private Map<Checker, Cell> checkerToCell = new HashMap<>();
+    @JsonSerialize
     private Map<Cell, Checker> cellToChecker = new HashMap<>();
+    private Map<Coordinates, Cell> field = new HashMap<>();
 
     public Board() {
         createCell(0, 0);
-        fillField();
     }
 
     private Cell createCell(int x, int y) {
-        if (x < 0 || y >= fieldSize || y < 0 || y >= fieldSize) {
+        if (x < 0 || x >= FIELD_SIZE || y < 0 || y >= FIELD_SIZE) {
             return null;
         }
         Coordinates currentCoordinates = new Coordinates(x, y);
@@ -28,30 +33,50 @@ public class Board {
         Cell cell = new Cell(currentCoordinates);
         field.put(currentCoordinates, cell);
 
-        cell.setLink(0, new Cell(new Coordinates(x - 2, y + 2)));
-        cell.setLink(1, new Cell(new Coordinates(x + 2, y + 2)));
-        cell.setLink(2, new Cell(new Coordinates(x + 2, y - 2)));
-        cell.setLink(3, new Cell(new Coordinates(x - 2, y - 2)));
+        cell.addLink(Link.LEFT_UP, createCell(x - 1, y + 1));
+        cell.addLink(Link.RIGHT_UP, createCell(x + 1, y + 1));
+        cell.addLink(Link.RIGHT_DOWN, createCell(x + 1, y - 1));
+        cell.addLink(Link.LEFT_DOWN, createCell(x - 1, y - 1));
 
         return cell;
 
     }
 
-    private void fillField () {
-
+    public Cell getCell(Coordinates coordinates){
+        return field.get(coordinates);
     }
 
-
-    public Map<Checker, Cell> getCheckerToCell() {
-        return checkerToCell;
+    public void removeCellToChecker(Cell cell) {
+        cellToChecker.remove(cell);
     }
 
-    public Map<Cell, Checker> getCellToChecker() {
-        return cellToChecker;
+    public void removeCheckerToCell(Checker checker) {
+        checkerToCell.remove(checker);
     }
 
-    public void setCheckerToCell(Map<Checker, Cell> checkerToCell) {
-        this.checkerToCell = checkerToCell;
+    public void putCheckerToCell(Checker checker, Cell cell){
+        checkerToCell.put(checker, cell);
+    }
+
+    public void putCellToChecker(Cell cell, Checker checker){
+        cellToChecker.put(cell, checker);
+    }
+
+    public void addCellAndChecker(Cell cell, Checker checker){
+        cellToChecker.put(cell, checker);
+        checkerToCell.put(checker, cell);
+    }
+
+    public Checker getChecker(Cell cell) {
+        return cellToChecker.get(cell);
+    }
+
+    public Cell getCell(Checker checker) {
+        return checkerToCell.get(checker);
+    }
+
+    public List<Checker> getCheckersByColor(boolean isWhite) {
+        return checkerToCell.keySet().stream().filter(c -> c.isWhite() == isWhite).collect(Collectors.toList());
     }
 
     public void setCellToChecker(Map<Cell, Checker> cellToChecker) {

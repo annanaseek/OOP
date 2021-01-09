@@ -1,25 +1,37 @@
 package ru.vsu.cs.essences;
 
-import java.awt.*;
-import java.util.ArrayList;
-import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import java.util.*;
+
+@JsonSerialize
+@JsonDeserialize
 public class Cell {
 
-    Coordinates coordinates;
-    ArrayList links = new ArrayList<Cell>();
+    private Coordinates coordinates;
+    private Map<Link, Cell> linksFromCell = new HashMap<>();
 
     public Cell(Coordinates coordinates) {
         this.coordinates = coordinates;
     }
 
-    public Cell(Coordinates coordinates, ArrayList links) {
-        this.coordinates = coordinates;
-        this.links = links;
+    public Cell getCellFromLink(Link link) {
+        return linksFromCell.get(link);
     }
 
-    public void setLink (int index, Cell link) {
-        links.set(index, link);
+    public void addLink(Link link, Cell cell){
+        linksFromCell.put(link, cell);
+    }
+
+    public Coordinates getCoordinates() {
+        return coordinates;
+    }
+
+    @JsonIgnore
+    public List<Cell> getCellsFromLinks(){
+        return new LinkedList<>(linksFromCell.values());
     }
 
     @Override
@@ -27,12 +39,18 @@ public class Cell {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Cell cell = (Cell) o;
-        return Objects.equals(coordinates, cell.coordinates) &&
-                Objects.equals(links, cell.links);
+        return coordinates.equals(cell.coordinates);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(coordinates, links);
+        return Objects.hash(coordinates);
+    }
+
+    @Override
+    public String toString() {
+        return "Cell{" +
+                "coordinates=" + coordinates +
+                '}';
     }
 }

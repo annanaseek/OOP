@@ -1,13 +1,13 @@
 package ru.vsu.cs;
 
-import ru.vsu.cs.essences.Game;
+import ru.vsu.cs.essences.GameState;
 import ru.vsu.cs.services.GameService;
 
 public class Main {
 
     public static void main(String[] args) {
-        Game game = new Game();
+        GameState gameState = new GameState();
         GameService gs = new GameService();
-        gs.startGame(game);
+        gs.startGame(gameState);
     }
 }
